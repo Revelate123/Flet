@@ -4,8 +4,9 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from datetime import datetime
 import sqlite3
 from helpers import apology, login_required
-
-
+import vertexai
+from vertexai.preview.generative_models import GenerativeModel
+vertexai.init(project="future-producer-418904")
 
 app = Flask(__name__)
 
@@ -20,8 +21,15 @@ Session(app)
 @login_required
 def main():
     #TODO: create login page
-
-    return render_template("layout.html")
+    
+    if request.method == "POST":
+        chat_request = request.form.get("chat_request")
+        gemini_pro_model = GenerativeModel("gemini-1.0-pro")
+        model_response = gemini_pro_model.generate_content(chat_request)
+        print("model_response\n",model_response)
+        return render_template("ai.html",chat_reply=model_response.text)
+    else:
+        return render_template("ai.html")
 
 
 @app.route("/login", methods=["GET", "POST"])
