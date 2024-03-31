@@ -5,8 +5,7 @@ from datetime import datetime
 import sqlite3
 from helpers import apology, login_required
 
-con = sqlite3.connect("users.db")
-db = con.cursor()
+
 
 app = Flask(__name__)
 
@@ -22,7 +21,7 @@ Session(app)
 def main():
     #TODO: create login page
 
-    return render_template("login.html")
+    return render_template("layout.html")
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -43,10 +42,15 @@ def login():
             return apology("must provide password", 403)
 
         # Query database for username
-        rows = db.execute(
-            "SELECT * FROM users WHERE username = ?", request.form.get("username")
-        )
-
+        with sqlite3.connect("users.db") as con:
+            con.row_factory = sqlite3.Row
+            db = con.cursor()
+            username = request.form.get("username")
+            rows = db.execute(
+                "SELECT * FROM users WHERE username = ?", (request.form.get("username"),)
+            )
+        rows = rows.fetchall()
+        #'pbkdf2:sha256:600000$gpIiEx5JghROxrJN$3bfc8f2e80c5b21b1a95dd07487ea382321bcbdc7e101a4c703fe7028e3121fa'
         # Ensure username exists and password is correct
         if len(rows) != 1 or not check_password_hash(
             rows[0]["hash"], request.form.get("password")
@@ -88,16 +92,19 @@ def register():
         username = request.form.get("username")
         password = generate_password_hash(request.form.get("password"))
         # Query database for username
-        rows = db.execute(
-            "SELECT * FROM users WHERE username = ?", username
-        )
+        with sqlite3.connect("users.db") as con:
+            db = con.cursor()
+            rows = db.execute(
+                "SELECT * FROM users WHERE username = ?", (username,)
+            )
 
         # Ensure username exists and password is correct
-        if len(rows) != 0:
+        if len(list(rows)) != 0:
             return apology("Username already exists", 400)
-
-        db.execute("INSERT INTO users (username, hash) VALUES (?, ?)", username, password)
-
+        with sqlite3.connect("users.db") as con:
+            db = con.cursor()
+            db.execute("INSERT INTO users (username, hash) VALUES (?, ?)", (username, password))
+            con.commit()
         # Redirect user to home page
         return redirect("/login")
 
@@ -129,10 +136,13 @@ def change_password():
             return apology("must provide password", 403)
 
         # Query database for username
-        rows = db.execute(
-            "SELECT * FROM users WHERE id = ?", session["user_id"]
-        )
-
+        with sqlite3.connect("users.db") as con:
+            con.row_factory = sqlite3.Row
+            db = con.cursor()
+            rows = db.execute(
+                "SELECT * FROM users WHERE id = ?", (session["user_id"],)
+            )
+        rows = rows.fetchall()
         # Ensure username exists and password is correct
         if len(rows) != 1 or not check_password_hash(
             rows[0]["hash"], request.form.get("old_password")
@@ -143,9 +153,10 @@ def change_password():
             return apology("passwords do not match", 403)
 
         password = generate_password_hash(request.form.get("new_password"))
-
-        db.execute("UPDATE users SET username = ?, hash = ? WHERE id = ?", rows[0]['username'], password, session['user_id'])
-
+        with sqlite3.connect("users.db") as con:
+            db = con.cursor()
+            db.execute("UPDATE users SET username = ?, hash = ? WHERE id = ?", (rows[0]['username'], password, session['user_id']))
+            con.commit()
         # Redirect user to home page
         return redirect("/login")
 
