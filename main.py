@@ -31,6 +31,11 @@ def main():
     else:
         return render_template("ai.html")
 
+@app.route('/beam_calculator', methods=["GET", "POST"])
+@login_required
+def beam_calculator():
+    return render_template("beam_calculator.html")
+
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
