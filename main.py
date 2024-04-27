@@ -1,14 +1,36 @@
 from flask import Flask, flash, redirect, render_template, request, session, jsonify
 from flask_session import Session
+import vertexai.generative_models
 from werkzeug.security import check_password_hash, generate_password_hash
-from datetime import datetime
+import requests
 import sqlite3
 from helpers import apology, login_required
+
+
 import vertexai
-from vertexai.preview.generative_models import GenerativeModel
-vertexai.init(project="future-producer-418904")
+import google.oauth2.credentials
+import google_auth_oauthlib.flow
+from oauth2client import tools
+from google.oauth2 import service_account
+from google.cloud import datastore
+
+import os
+import flask
+import requests
+
+import google.oauth2.credentials
+import google_auth_oauthlib.flow
+import googleapiclient.discovery
+
+CLIENT_SECRETS_FILE = "client_secret.json"
+SCOPES = ['https://www.googleapis.com/auth/drive.metadata.readonly']
+API_SERVICE_NAME = 'drive'
+API_VERSION = 'v2'
+
 
 app = Flask(__name__)
+
+app.secret_key = 'REPLACE ME - this value is here as a placeholder.'
 
 # Configure session to use filesystem (instead of signed cookies)
 app.config["SESSION_PERMANENT"] = False
@@ -16,25 +38,101 @@ app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
 
 
+credentials = service_account.Credentials.from_service_account_file(
+    'future-producer-418904-5b9b595c6c5e.json')
+
+vertexai.init(credentials=credentials)
+
+
+model = vertexai.generative_models.GenerativeModel("gemini-pro")
+
+
+
+
+
+@app.route('/authorize')
+def authorize():
+  # Create flow instance to manage the OAuth 2.0 Authorization Grant Flow steps.
+  flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
+      CLIENT_SECRETS_FILE, scopes=SCOPES)
+
+  # The URI created here must exactly match one of the authorized redirect URIs
+  # for the OAuth 2.0 client, which you configured in the API Console. If this
+  # value doesn't match an authorized URI, you will get a 'redirect_uri_mismatch'
+  # error.
+  flow.redirect_uri = flask.url_for('oauth2callback', _external=True)
+
+  authorization_url, state = flow.authorization_url(
+      # Enable offline access so that you can refresh an access token without
+      # re-prompting the user for permission. Recommended for web server apps.
+      access_type='offline',
+      # Enable incremental authorization. Recommended as a best practice.
+      include_granted_scopes='true')
+
+  # Store the state so the callback can verify the auth server response.
+  flask.session['state'] = state
+
+  return flask.redirect(authorization_url)
+
+
+
+
+@app.route('/oauth2callback')
+def oauth2callback():
+  # Specify the state when creating the flow in the callback so that it can
+  # verified in the authorization server response.
+  state = flask.session['state']
+
+  flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
+      CLIENT_SECRETS_FILE, scopes=SCOPES, state=state)
+  flow.redirect_uri = flask.url_for('oauth2callback', _external=True)
+
+  # Use the authorization server's response to fetch the OAuth 2.0 tokens.
+  authorization_response = flask.request.url
+  flow.fetch_token(authorization_response=authorization_response)
+
+  # Store credentials in the session.
+  # ACTION ITEM: In a production app, you likely want to save these
+  #              credentials in a persistent database instead.
+  credentials = flow.credentials
+  flask.session['credentials'] = credentials_to_dict(credentials)
+
+  return flask.redirect(flask.url_for('test_api_request'))
+
+
+
+
+
+
 
 @app.route('/', methods=['GET', 'POST'])
 @login_required
 def main():
-    #TODO: create login page
-    
     if request.method == "POST":
         chat_request = request.form.get("chat_request")
-        gemini_pro_model = GenerativeModel("gemini-1.0-pro")
-        model_response = gemini_pro_model.generate_content(chat_request)
-        print("model_response\n",model_response)
-        return render_template("ai.html",chat_reply=model_response.text)
+        model_response = model.generate_content("Extract and return as text, only one location from the following sentence. Do not return any other text and do not provide a full stop.:" + chat_request).text
+        #If they did not provide a location then I need a way to know
+        print(model_response)
+        location = requests.get("https://maps.googleapis.com/maps/api/place/findplacefromtext/json?fields=formatted_address%2Cname%2Crating%2Copening_hours%2Cgeometry&input=" + model_response +"&inputtype=textquery&key=AIzaSyDgGqGjI0-yZvppdw0XNhdyWR-HPcG1VWE").json()
+        print(location)
+        if location["status"] == "ZERO_RESULTS":
+            return render_template("ai.html",chat_reply="I couldn't find that location, could you try again?")
+        r = requests.get("https://maps.googleapis.com/maps/api/place/nearbysearch/json?keyword&location="+ str(location["candidates"][0]["geometry"]["location"]["lat"]) +"%2C"+ str(location["candidates"][0]["geometry"]["location"]["lng"]) +"&radius=1500&type=restaurant&key=AIzaSyDgGqGjI0-yZvppdw0XNhdyWR-HPcG1VWE&business_status=OPERATIONAL").json()
+        chat_reply = ""
+        #Sort by rank
+        for i in r['results']:
+            chat_reply += i["name"]
+            chat_reply += "\n"
+        
+        model_response_2 = model.generate_content("Recommend a single resturant from the following list of resturants and provide a brief description fewer than 20 words. Return in the format [You're visiting " + model_response + "! You should try <resturant>, <description>]. Do not use # or * symbols:" + chat_reply).text
+        print(model_response_2)
+        chat_reply = model_response_2
+        return render_template("ai.html",chat_reply=chat_reply)
     else:
         return render_template("ai.html")
 
-@app.route('/beam_calculator', methods=["GET", "POST"])
-@login_required
-def beam_calculator():
-    return render_template("beam_calculator.html")
+
+
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -79,6 +177,9 @@ def login():
     # User reached route via GET (as by clicking a link or via redirect)
     else:
         return render_template("login.html")
+
+
+
 
 
 @app.route("/register", methods=["GET", "POST"])
@@ -126,6 +227,9 @@ def register():
         return render_template("register.html")
 
 
+
+
+
 @app.route("/logout")
 def logout():
     """Log user out"""
@@ -135,6 +239,9 @@ def logout():
 
     # Redirect user to login form
     return redirect("/")
+
+
+
 
 
 @app.route("/change_password", methods=["GET", "POST"])
