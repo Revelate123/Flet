@@ -1,41 +1,32 @@
+import flask
 from flask import Flask, flash, redirect, render_template, request, session, jsonify
-from flask_session import Session
 import vertexai.generative_models
 from werkzeug.security import check_password_hash, generate_password_hash
 import requests
 import sqlite3
 from helpers import apology, login_required
+from flask_login import (
+    LoginManager,
+    current_user,
+    login_required,
+    login_user,
+    logout_user,
+)
 
 
+from user import User
 import vertexai
 import google.oauth2.credentials
 import google_auth_oauthlib.flow
 from oauth2client import tools
 from google.oauth2 import service_account
 from google.cloud import datastore
-
-import os
-import flask
-import requests
-
-import google.oauth2.credentials
-import google_auth_oauthlib.flow
 import googleapiclient.discovery
-
-CLIENT_SECRETS_FILE = "client_secret.json"
-SCOPES = ['https://www.googleapis.com/auth/drive.metadata.readonly']
-API_SERVICE_NAME = 'drive'
-API_VERSION = 'v2'
+from db import init_db_command
+import os
 
 
-app = Flask(__name__)
 
-app.secret_key = 'REPLACE ME - this value is here as a placeholder.'
-
-# Configure session to use filesystem (instead of signed cookies)
-app.config["SESSION_PERMANENT"] = False
-app.config["SESSION_TYPE"] = "filesystem"
-Session(app)
 
 
 credentials = service_account.Credentials.from_service_account_file(
@@ -46,12 +37,64 @@ vertexai.init(credentials=credentials)
 
 model = vertexai.generative_models.GenerativeModel("gemini-pro")
 
+# -*- coding: utf-8 -*-
 
 
+# This variable specifies the name of a file that contains the OAuth 2.0
+# information for this application, including its client_id and client_secret.
+CLIENT_SECRETS_FILE = 'client_secret_319728086235-ubuom2fs3laa07rgohgqr9m4mqe00sbc.apps.googleusercontent.com.json'
+
+# This OAuth 2.0 access scope allows for full read/write access to the
+# authenticated user's account and requires requests to use an SSL connection.
+SCOPES = ["openid", "https://www.googleapis.com/auth/userinfo.profile",  "https://www.googleapis.com/auth/userinfo.email"]
+
+app = flask.Flask(__name__)
+
+login_manager = LoginManager()
+login_manager.init_app(app)
+# Note: A secret key is included in the sample so that it works.
+# If you use this code in your application, replace this with a truly secret
+# key. See https://flask.palletsprojects.com/quickstart/#sessions.
+app.secret_key = 'REPLACE ME - this value is here as a placeholder.'
+
+
+# Naive database setup
+try:
+    init_db_command()
+except sqlite3.OperationalError:
+    # Assume it's already been created
+    pass
+
+
+@app.route('/')
+def index():
+  return print_index_table()
+
+
+@app.route('/test')
+@login_required
+def test_api_request():
+  # Load credentials from the session.
+  credentials = service_account.Credentials.from_service_account_file(
+    'future-producer-418904-5b9b595c6c5e.json')
+
+  vertexai.init(credentials=credentials)
+
+  model = vertexai.generative_models.GenerativeModel("gemini-pro")
+  chat_request = "Im from Auckland"
+  model_response = model.generate_content("Extract and return as text, only one location from the following sentence. Do not return any other text and do not provide a full stop.:" + chat_request).text
+        #If they did not provide a location then I need a way to know
+  print(model_response)
+  # Save credentials back to session in case access token was refreshed.
+  # ACTION ITEM: In a production app, you likely want to save these
+  #              credentials in a persistent database instead.
+
+  return (model_response + print_index_table())
 
 
 @app.route('/authorize')
 def authorize():
+  flask.session.clear()
   # Create flow instance to manage the OAuth 2.0 Authorization Grant Flow steps.
   flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
       CLIENT_SECRETS_FILE, scopes=SCOPES)
@@ -75,8 +118,6 @@ def authorize():
   return flask.redirect(authorization_url)
 
 
-
-
 @app.route('/oauth2callback')
 def oauth2callback():
   # Specify the state when creating the flow in the callback so that it can
@@ -95,197 +136,93 @@ def oauth2callback():
   # ACTION ITEM: In a production app, you likely want to save these
   #              credentials in a persistent database instead.
   credentials = flow.credentials
-  flask.session['credentials'] = credentials_to_dict(credentials)
+  print("credentials", credentials)
+  info = googleapiclient.discovery.build("oauth2","v2",credentials=credentials)
+  info = info.userinfo().get().execute()
+
+  user = User(id_= info["id"], name=info["given_name"], email=info["email"], profile_pic=info["picture"],
+              token=credentials.token, refresh_token=credentials.refresh_token, token_uri=credentials.token_uri,
+              client_id=credentials.client_id, client_secret=credentials.client_secret, scopes=credentials.scopes)
+  if not User.get(info["id"]):
+        User.create(id_= info["id"], name=info["given_name"], email=info["email"], profile_pic=info["picture"],
+              token=credentials.token, refresh_token=credentials.refresh_token, token_uri=credentials.token_uri,
+              client_id=credentials.client_id, client_secret=credentials.client_secret, scopes=credentials.scopes)
+
+  login_user(user)
+  
+  #flask.session['credentials'] = credentials_to_dict(credentials)
 
   return flask.redirect(flask.url_for('test_api_request'))
 
 
-
-
-
-
-
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/revoke')
 @login_required
-def main():
-    if request.method == "POST":
-        chat_request = request.form.get("chat_request")
-        model_response = model.generate_content("Extract and return as text, only one location from the following sentence. Do not return any other text and do not provide a full stop.:" + chat_request).text
-        #If they did not provide a location then I need a way to know
-        print(model_response)
-        location = requests.get("https://maps.googleapis.com/maps/api/place/findplacefromtext/json?fields=formatted_address%2Cname%2Crating%2Copening_hours%2Cgeometry&input=" + model_response +"&inputtype=textquery&key=AIzaSyDgGqGjI0-yZvppdw0XNhdyWR-HPcG1VWE").json()
-        print(location)
-        if location["status"] == "ZERO_RESULTS":
-            return render_template("ai.html",chat_reply="I couldn't find that location, could you try again?")
-        r = requests.get("https://maps.googleapis.com/maps/api/place/nearbysearch/json?keyword&location="+ str(location["candidates"][0]["geometry"]["location"]["lat"]) +"%2C"+ str(location["candidates"][0]["geometry"]["location"]["lng"]) +"&radius=1500&type=restaurant&key=AIzaSyDgGqGjI0-yZvppdw0XNhdyWR-HPcG1VWE&business_status=OPERATIONAL").json()
-        chat_reply = ""
-        #Sort by rank
-        for i in r['results']:
-            chat_reply += i["name"]
-            chat_reply += "\n"
-        
-        model_response_2 = model.generate_content("Recommend a single resturant from the following list of resturants and provide a brief description fewer than 20 words. Return in the format [You're visiting " + model_response + "! You should try <resturant>, <description>]. Do not use # or * symbols:" + chat_reply).text
-        print(model_response_2)
-        chat_reply = model_response_2
-        return render_template("ai.html",chat_reply=chat_reply)
-    else:
-        return render_template("ai.html")
+def revoke():
+  user = current_user
+  #credentials = google.oauth2.credentials.Credentials(**flask.session['credentials'])
+  credentials = google.oauth2.credentials.Credentials(**user.credentials)
+  revoke = requests.post('https://oauth2.googleapis.com/revoke',
+      params={'token': credentials.token},
+      headers = {'content-type': 'application/x-www-form-urlencoded'})
+
+  status_code = getattr(revoke, 'status_code')
+  if status_code == 200:
+    return('Credentials successfully revoked.' + print_index_table())
+  else:
+    return('An error occurred.' + print_index_table())
 
 
+@app.route('/clear')
+def clear_credentials():
+  if 'credentials' in flask.session:
+    del flask.session['credentials']
+  return ('Credentials have been cleared.<br><br>' +
+          print_index_table())
 
 
+def credentials_to_dict(credentials):
+  return {'token': credentials.token,
+          'refresh_token': credentials.refresh_token,
+          'token_uri': credentials.token_uri,
+          'client_id': credentials.client_id,
+          'client_secret': credentials.client_secret,
+          'scopes': credentials.scopes}
 
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    """Log user in"""
-
-    # Forget any user_id
-    session.clear()
-
-    # User reached route via POST (as by submitting a form via POST)
-    if request.method == "POST":
-        # Ensure username was submitted
-        if not request.form.get("username"):
-            return apology("must provide username", 403)
-
-        # Ensure password was submitted
-        elif not request.form.get("password"):
-            return apology("must provide password", 403)
-
-        # Query database for username
-        with sqlite3.connect("users.db") as con:
-            con.row_factory = sqlite3.Row
-            db = con.cursor()
-            username = request.form.get("username")
-            rows = db.execute(
-                "SELECT * FROM users WHERE username = ?", (request.form.get("username"),)
-            )
-        rows = rows.fetchall()
-        #'pbkdf2:sha256:600000$gpIiEx5JghROxrJN$3bfc8f2e80c5b21b1a95dd07487ea382321bcbdc7e101a4c703fe7028e3121fa'
-        # Ensure username exists and password is correct
-        if len(rows) != 1 or not check_password_hash(
-            rows[0]["hash"], request.form.get("password")
-        ):
-            return apology("invalid username and/or password", 403)
-
-        # Remember which user has logged in
-        session["user_id"] = rows[0]["id"]
-
-        # Redirect user to home page
-        return redirect("/")
-
-    # User reached route via GET (as by clicking a link or via redirect)
-    else:
-        return render_template("login.html")
+def print_index_table():
+  return ('<table>' +
+          '<tr><td><a href="/test">Test an API request</a></td>' +
+          '<td>Submit an API request and see a formatted JSON response. ' +
+          '    Go through the authorization flow if there are no stored ' +
+          '    credentials for the user.</td></tr>' +
+          '<tr><td><a href="/authorize">Test the auth flow directly</a></td>' +
+          '<td>Go directly to the authorization flow. If there are stored ' +
+          '    credentials, you still might not be prompted to reauthorize ' +
+          '    the application.</td></tr>' +
+          '<tr><td><a href="/revoke">Revoke current credentials</a></td>' +
+          '<td>Revoke the access token associated with the current user ' +
+          '    session. After revoking credentials, if you go to the test ' +
+          '    page, you should see an <code>invalid_grant</code> error.' +
+          '</td></tr>' +
+          '<tr><td><a href="/clear">Clear Flask session credentials</a></td>' +
+          '<td>Clear the access token currently stored in the user session. ' +
+          '    After clearing the token, if you <a href="/test">test the ' +
+          '    API request</a> again, you should go back to the auth flow.' +
+          '</td></tr></table>')
 
 
+@login_manager.user_loader
+def load_user(user_id):
+    return User.get(user_id)
 
 
-
-@app.route("/register", methods=["GET", "POST"])
-def register():
-    """Register user"""
-    session.clear()
-
-    # User reached route via POST (as by submitting a form via POST)
-    if request.method == "POST":
-        # Ensure username was submitted
-        if not request.form.get("username"):
-            return apology("must provide username", 400)
-
-        # Ensure password was submitted
-        elif not request.form.get("password"):
-            return apology("must provide password", 400)
-
-        elif not request.form.get("confirmation"):
-            return apology("must provide password", 400)
-
-        elif request.form.get("password") != request.form.get("confirmation"):
-            return apology("passwords do not match", 400)
-
-        username = request.form.get("username")
-        password = generate_password_hash(request.form.get("password"))
-        # Query database for username
-        with sqlite3.connect("users.db") as con:
-            db = con.cursor()
-            rows = db.execute(
-                "SELECT * FROM users WHERE username = ?", (username,)
-            )
-
-        # Ensure username exists and password is correct
-        if len(list(rows)) != 0:
-            return apology("Username already exists", 400)
-        with sqlite3.connect("users.db") as con:
-            db = con.cursor()
-            db.execute("INSERT INTO users (username, hash) VALUES (?, ?)", (username, password))
-            con.commit()
-        # Redirect user to home page
-        return redirect("/login")
-
-    # User reached route via GET (as by clicking a link or via redirect)
-    else:
-        return render_template("register.html")
-
-
-
-
-
-@app.route("/logout")
-def logout():
-    """Log user out"""
-
-    # Forget any user_id
-    session.clear()
-
-    # Redirect user to login form
-    return redirect("/")
-
-
-
-
-
-@app.route("/change_password", methods=["GET", "POST"])
-@login_required
-def change_password():
-    """Change a users password"""
-
-    # User reached route via POST (as by submitting a form via POST)
-    if request.method == "POST":
-        # Ensure password was submitted
-        if not request.form.get("old_password") or not request.form.get("new_password") or not request.form.get("confirmation"):
-            return apology("must provide password", 403)
-
-        # Query database for username
-        with sqlite3.connect("users.db") as con:
-            con.row_factory = sqlite3.Row
-            db = con.cursor()
-            rows = db.execute(
-                "SELECT * FROM users WHERE id = ?", (session["user_id"],)
-            )
-        rows = rows.fetchall()
-        # Ensure username exists and password is correct
-        if len(rows) != 1 or not check_password_hash(
-            rows[0]["hash"], request.form.get("old_password")
-        ):
-            return apology("incorrect password", 403)
-
-        elif request.form.get("new_password") != request.form.get("confirmation"):
-            return apology("passwords do not match", 403)
-
-        password = generate_password_hash(request.form.get("new_password"))
-        with sqlite3.connect("users.db") as con:
-            db = con.cursor()
-            db.execute("UPDATE users SET username = ?, hash = ? WHERE id = ?", (rows[0]['username'], password, session['user_id']))
-            con.commit()
-        # Redirect user to home page
-        return redirect("/login")
-
-    # User reached route via GET (as by clicking a link or via redirect)
-    else:
-        return render_template("change_password.html")
-    # return history
-    return render_template("change_password.html")
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=8080)
+  # When running locally, disable OAuthlib's HTTPs verification.
+  # ACTION ITEM for developers:
+  #     When running in production *do not* leave this option enabled.
+  os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+
+  # Specify a hostname and port that are set as a valid redirect URI
+  # for your API project in the Google API Console.
+  app.run('localhost', 8080)
