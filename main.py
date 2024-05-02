@@ -11,10 +11,10 @@ from flask_login import (
     login_required,
     login_user,
     logout_user,
+    UserMixin
 )
+from flask_sqlalchemy import SQLAlchemy
 
-
-from user import User
 import vertexai
 import google.oauth2.credentials
 import google_auth_oauthlib.flow
@@ -29,13 +29,13 @@ import os
 
 
 
-credentials = service_account.Credentials.from_service_account_file(
-    'future-producer-418904-5b9b595c6c5e.json')
+#credentials = service_account.Credentials.from_service_account_file(
+    #'future-producer-418904-5b9b595c6c5e.json')
 
-vertexai.init(credentials=credentials)
+#vertexai.init(credentials=credentials)
 
 
-model = vertexai.generative_models.GenerativeModel("gemini-pro")
+#model = vertexai.generative_models.GenerativeModel("gemini-pro")
 
 # -*- coding: utf-8 -*-
 
@@ -49,7 +49,7 @@ CLIENT_SECRETS_FILE = 'client_secret_319728086235-ubuom2fs3laa07rgohgqr9m4mqe00s
 SCOPES = ["openid", "https://www.googleapis.com/auth/userinfo.profile",  "https://www.googleapis.com/auth/userinfo.email"]
 
 app = flask.Flask(__name__)
-
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite'
 login_manager = LoginManager()
 login_manager.init_app(app)
 # Note: A secret key is included in the sample so that it works.
@@ -58,12 +58,21 @@ login_manager.init_app(app)
 app.secret_key = 'REPLACE ME - this value is here as a placeholder.'
 
 
-# Naive database setup
-try:
-    init_db_command()
-except sqlite3.OperationalError:
-    # Assume it's already been created
-    pass
+db = SQLAlchemy(app)
+login = LoginManager(app)
+login.login_view = 'index'
+
+
+class User(UserMixin, db.Model):
+    __tablename__ = 'users'
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(64), nullable=False)
+    email = db.Column(db.String(64), nullable=True)
+
+
+@login.user_loader
+def load_user(id):
+    return db.session.get(User, int(id))
 
 
 @app.route('/')
@@ -76,7 +85,7 @@ def index():
 def test_api_request():
   # Load credentials from the session.
   credentials = service_account.Credentials.from_service_account_file(
-    'future-producer-418904-5b9b595c6c5e.json')
+    'future-producer-418904-ed3008c258c5.json')
 
   vertexai.init(credentials=credentials)
 
@@ -140,33 +149,27 @@ def oauth2callback():
   info = googleapiclient.discovery.build("oauth2","v2",credentials=credentials)
   info = info.userinfo().get().execute()
 
-  user = User(id_= info["id"], name=info["given_name"], email=info["email"], profile_pic=info["picture"],
-              token=credentials.token, refresh_token=credentials.refresh_token, token_uri=credentials.token_uri,
-              client_id=credentials.client_id, client_secret=credentials.client_secret, scopes=credentials.scopes)
-  if not User.get(info["id"]):
-        User.create(id_= info["id"], name=info["given_name"], email=info["email"], profile_pic=info["picture"],
-              token=credentials.token, refresh_token=credentials.refresh_token, token_uri=credentials.token_uri,
-              client_id=credentials.client_id, client_secret=credentials.client_secret, scopes=credentials.scopes)
+  user = db.session.scalar(db.select(User).where(User.id == info["id"]))
+  if user is None:
+        user = User(email=info["email"], username=info["email"].split('@')[0])
+        db.session.add(user)
+        db.session.commit()
 
   login_user(user)
-  
-  #flask.session['credentials'] = credentials_to_dict(credentials)
-
+  flask.session['credentials'] = credentials_to_dict(credentials)
   return flask.redirect(flask.url_for('test_api_request'))
 
 
 @app.route('/revoke')
 @login_required
 def revoke():
-  user = current_user
-  #credentials = google.oauth2.credentials.Credentials(**flask.session['credentials'])
-  credentials = google.oauth2.credentials.Credentials(**user.credentials)
+  credentials = google.oauth2.credentials.Credentials(**flask.session['credentials'])
   revoke = requests.post('https://oauth2.googleapis.com/revoke',
       params={'token': credentials.token},
       headers = {'content-type': 'application/x-www-form-urlencoded'})
-
   status_code = getattr(revoke, 'status_code')
   if status_code == 200:
+    logout_user()
     return('Credentials successfully revoked.' + print_index_table())
   else:
     return('An error occurred.' + print_index_table())
@@ -174,8 +177,10 @@ def revoke():
 
 @app.route('/clear')
 def clear_credentials():
+  logout_user()
   if 'credentials' in flask.session:
     del flask.session['credentials']
+  flash('You have been logged out.')
   return ('Credentials have been cleared.<br><br>' +
           print_index_table())
 
@@ -210,11 +215,8 @@ def print_index_table():
           '</td></tr></table>')
 
 
-@login_manager.user_loader
-def load_user(user_id):
-    return User.get(user_id)
-
-
+with app.app_context():
+    db.create_all()
 
 
 if __name__ == '__main__':
@@ -225,4 +227,4 @@ if __name__ == '__main__':
 
   # Specify a hostname and port that are set as a valid redirect URI
   # for your API project in the Google API Console.
-  app.run('localhost', 8080)
+  app.run(host = '0.0.0.0', port=5000)
