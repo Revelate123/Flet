@@ -1,0 +1,27 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    
+{% endblock %}
+
+{% block nav_bar %}
+<ul class="navbar-nav me-auto mt-2">
+    <li class="nav-item"><a class="nav-link" href="/cv">CV</a></li>
+    <li class="nav-item"><a class="nav-link" href="/restaurant">Restaurant Recommender</a></li>
+</ul>
+<ul class="navbar-nav ms-auto mt-2">
+    <li class="nav-item"><a class="nav-link" href="/logout">Log Out</a></li>
+</ul>
+{% endblock %}
+
+
+
+{% block main %}
+<form action="/restaurant" method="post">
+    <div class="mb-3">
+        <input autocomplete="on" autofocus class="form-control mx-auto w-auto" name="chat_request" placeholder="Where are you heading?" type="text">
+    </div>
+    <button class="btn btn-primary" type="submit">Ask</button>
+</form>
+<p>{{chat_reply}}</p>
+{% endblock %}

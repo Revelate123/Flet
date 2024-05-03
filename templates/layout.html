@@ -16,7 +16,7 @@
 
         <link href="/static/styles.css" rel="stylesheet">
 
-        <title>Tom's Tools: {% block title %}{% endblock %}</title>
+        <title>Restaurant Recommender{% block title %}{% endblock %}</title>
 
     </head>
 
@@ -29,22 +29,8 @@
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="collapse navbar-collapse" id="navbar">
-                    {% if session["user_id"] %}
-                        <ul class="navbar-nav me-auto mt-2">
-                            <li class="nav-item"><a class="nav-link" href="/quote">CV</a></li>
-                            <li class="nav-item"><a class="nav-link" href="/buy">Interactive</a></li>
-                            <li class="nav-item"><a class="nav-link" href="/sell">Play a game</a></li>
-                        </ul>
-                        <ul class="navbar-nav ms-auto mt-2">
-                            <li class="nav-item"><a class="nav-link" href="/logout">Log Out</a></li>
-                            <li class="nav-item"><a class="nav-link" href="/change_password">Change Password</a></li>
-                        </ul>
-                    {% else %}
-                        <ul class="navbar-nav ms-auto mt-2">
-                            <li class="nav-item"><a class="nav-link" href="/register">Register</a></li>
-                            <li class="nav-item"><a class="nav-link" href="/login">Log In</a></li>
-                        </ul>
-                    {% endif %}
+                    {% block nav_bar %}{% endblock %}
+                    
                 </div>
             </div>
         </nav>
@@ -62,10 +48,6 @@
         </main>
 
         <footer class="mb-5">
-
-            <p class="mb-3 small text-center text-muted">
-                Data provided by <a href="https://finance.yahoo.com/">Yahoo</a>
-            </p>
 
             <form action="https://validator.w3.org/check" class="text-center" enctype="multipart/form-data" method="post" target="_blank">
                 <input name="doctype" type="hidden" value="HTML5">

@@ -1,10 +1,9 @@
 import flask
-from flask import Flask, flash, redirect, render_template, request, session, jsonify
+from flask import Flask, flash, redirect, render_template, request, session, jsonify, send_file
 import vertexai.generative_models
 from werkzeug.security import check_password_hash, generate_password_hash
 import requests
 import sqlite3
-from helpers import apology, login_required
 from flask_login import (
     LoginManager,
     current_user,
@@ -22,7 +21,6 @@ from oauth2client import tools
 from google.oauth2 import service_account
 from google.cloud import datastore
 import googleapiclient.discovery
-from db import init_db_command
 import os
 
 
@@ -77,27 +75,50 @@ def load_user(id):
 
 @app.route('/')
 def index():
+  return render_template("login.html")
   return print_index_table()
 
 
-@app.route('/test')
+
+@app.route('/cv')
+def cv():
+   
+        return send_file('static\Thomas Duffett CV (1).pdf', mimetype='.pdf')
+
+
+
+@app.route('/restaurant', methods=["GET","POST"])
 @login_required
-def test_api_request():
+def restaurant():
   # Load credentials from the session.
   credentials = service_account.Credentials.from_service_account_file(
     'future-producer-418904-ed3008c258c5.json')
 
   vertexai.init(credentials=credentials)
-
-  model = vertexai.generative_models.GenerativeModel("gemini-pro")
-  chat_request = "Im from Auckland"
-  model_response = model.generate_content("Extract and return as text, only one location from the following sentence. Do not return any other text and do not provide a full stop.:" + chat_request).text
+  if request.method == "POST":
+        model = vertexai.generative_models.GenerativeModel("gemini-pro")
+        chat_request = request.form.get("chat_request")
+        model_response = model.generate_content(chat_request)
+        print("model_response\n",model_response)
+        model_response = model.generate_content("Extract and return as text, only one location from the following sentence. Do not return any other text and do not provide a full stop.:" + chat_request).text
         #If they did not provide a location then I need a way to know
-  print(model_response)
-  # Save credentials back to session in case access token was refreshed.
-  # ACTION ITEM: In a production app, you likely want to save these
-  #              credentials in a persistent database instead.
-
+        print(model_response)
+        location = requests.get("https://maps.googleapis.com/maps/api/place/findplacefromtext/json?fields=formatted_address%2Cname%2Crating%2Copening_hours%2Cgeometry&input=" + model_response +"&inputtype=textquery&key=AIzaSyDgGqGjI0-yZvppdw0XNhdyWR-HPcG1VWE").json()
+        print(location)
+        if location["status"] == "ZERO_RESULTS":
+            return render_template("restaurant.html",chat_reply="I couldn't find that location, could you try again?")
+        r = requests.get("https://maps.googleapis.com/maps/api/place/nearbysearch/json?keyword&location="+ str(location["candidates"][0]["geometry"]["location"]["lat"]) +"%2C"+ str(location["candidates"][0]["geometry"]["location"]["lng"]) +"&radius=1500&type=restaurant&key=AIzaSyDgGqGjI0-yZvppdw0XNhdyWR-HPcG1VWE&business_status=OPERATIONAL").json()
+        chat_reply = ""
+        #Sort by rank
+        for i in r['results']:
+            chat_reply += i["name"]
+            chat_reply += "\n"
+        model_response_2 = model.generate_content("Recommend a single resturant from the following list of resturants and provide a brief description fewer than 20 words. Return in the format [You're visiting " + model_response + "! You should try <resturant>, <description>]. Do not use # or * symbols:" + chat_reply).text
+        print(model_response_2)
+        chat_reply = model_response_2
+        return render_template("restaurant.html",chat_reply=chat_reply)
+  else:
+     return render_template("restaurant.html")
   return (model_response + print_index_table())
 
 
@@ -157,21 +178,27 @@ def oauth2callback():
 
   login_user(user)
   flask.session['credentials'] = credentials_to_dict(credentials)
-  return flask.redirect(flask.url_for('test_api_request'))
+  return flask.redirect(flask.url_for('restaurant'))
 
 
-@app.route('/revoke')
+@app.route('/logout')
 @login_required
 def revoke():
+  logout_user()
+  #flash('You have been logged out.')
   credentials = google.oauth2.credentials.Credentials(**flask.session['credentials'])
+  if 'credentials' in flask.session:
+    del flask.session['credentials']
   revoke = requests.post('https://oauth2.googleapis.com/revoke',
       params={'token': credentials.token},
       headers = {'content-type': 'application/x-www-form-urlencoded'})
   status_code = getattr(revoke, 'status_code')
   if status_code == 200:
-    logout_user()
+    
+    return render_template("login.html")
     return('Credentials successfully revoked.' + print_index_table())
   else:
+    flash('An error occured.')
     return('An error occurred.' + print_index_table())
 
 
@@ -227,4 +254,4 @@ if __name__ == '__main__':
 
   # Specify a hostname and port that are set as a valid redirect URI
   # for your API project in the Google API Console.
-  app.run(host = '0.0.0.0', port=5000)
+  app.run(host = '0.0.0.0', port=5000, debug=True)
