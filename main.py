@@ -91,11 +91,13 @@ def cv():
 @login_required
 def restaurant():
   # Load credentials from the session.
-  credentials = service_account.Credentials.from_service_account_file(
-    'future-producer-418904-ed3008c258c5.json')
-
-  vertexai.init(credentials=credentials)
+  
   if request.method == "POST":
+        credentials = service_account.Credentials.from_service_account_file(
+          'future-producer-418904-ed3008c258c5.json')
+
+        print(credentials)
+        vertexai.init(credentials=credentials)
         model = vertexai.generative_models.GenerativeModel("gemini-pro")
         chat_request = request.form.get("chat_request")
         model_response = model.generate_content(chat_request)
