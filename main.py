@@ -1,9 +1,7 @@
 import flask
 from flask import Flask, flash, redirect, render_template, request, session, jsonify, send_file
 import vertexai.generative_models
-from werkzeug.security import check_password_hash, generate_password_hash
 import requests
-import sqlite3
 from flask_login import (
     LoginManager,
     current_user,
@@ -13,13 +11,10 @@ from flask_login import (
     UserMixin
 )
 from flask_sqlalchemy import SQLAlchemy
-
 import vertexai
 import google.oauth2.credentials
 import google_auth_oauthlib.flow
-from oauth2client import tools
 from google.oauth2 import service_account
-from google.cloud import datastore
 import googleapiclient.discovery
 import os
 
@@ -256,4 +251,4 @@ if __name__ == '__main__':
 
   # Specify a hostname and port that are set as a valid redirect URI
   # for your API project in the Google API Console.
-  app.run(host = '0.0.0.0', port=5000, debug=True)
+  app.run(host = '0.0.0.0', port=8080, debug=True)
