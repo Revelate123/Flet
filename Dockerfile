@@ -2,14 +2,14 @@
 
 FROM python:3.11.9-slim
 
-WORKDIR /python-docker
+WORKDIR /app
 ENV FLASK_APP=main.py
 ENV FLASK_RUN_HOST=0.0.0.0
 
 
 COPY requirements.txt requirements.txt
-RUN pip3 install -r requirements.txt --no-cache-dir
+RUN pip3 install --no-cache-dir --upgrade -r requirements.txt 
 EXPOSE 5000
 COPY . .
 
-CMD ["flask","run","--debug"]
+CMD ["gunicorn", "--bind","0.0.0.0:5000", "app:app"]
