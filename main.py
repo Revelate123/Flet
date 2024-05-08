@@ -40,14 +40,38 @@ def create_app(test_config=None):
   # This variable specifies the name of a file that contains the OAuth 2.0
   # information for this application, including its client_id and client_secret.
   #CLIENT_SECRETS_FILE = 'client_secret_2_319728086235-ubuom2fs3laa07rgohgqr9m4mqe00sbc.apps.googleusercontent.com.json'
-  CLIENT_SECRETS_FILE = os.environ.get('CLIENT_SECRETS_FILE')
+  #CLIENT_SECRETS_FILE = os.environ.get('CLIENT_SECRETS_FILE')
+
+  CLIENT_SECRETS_FILE = {"web":{"client_id":os.environ.get("client_id_C"),
+                                "project_id":os.environ.get("project_id_C"),
+                                "token_uri":os.environ.get("token_uri_C"),
+                                "auth_provider_x509_cert_url":os.environ.get("auth_provider_x509_cert_url_C"),
+                                "client_secret":os.environ.get("client_secret_C"),
+                                "redirect_uris":os.environ.get("redirect_uris_C")
+                                }}
   # This OAuth 2.0 access scope allows for full read/write access to the
   # authenticated user's account and requires requests to use an SSL connection.
   SCOPES = ["openid", "https://www.googleapis.com/auth/userinfo.profile",  "https://www.googleapis.com/auth/userinfo.email"]
 
   #FUTURE_PRODUCER = 'future-producer-418904-ed3008c258c5.json'
-  FUTURE_PRODUCER = os.environ.get('FUTURE_PRODUCER')
-    
+  #FUTURE_PRODUCER = os.environ.get('FUTURE_PRODUCER')
+  
+  FUTURE_PRODUCER = {
+  "type": os.environ.get("type_F"),
+  "project_id": os.environ.get("project_id_F"),
+  "private_key_id": os.environ.get("private_key_id_F"),
+  "private_key": os.environ.get("private_key_F"),
+  "client_email": os.environ.get("client_email_F"),
+  "client_id": os.environ.get("client_id_F"),
+  "auth_uri": os.environ.get("auth_uri_F"),
+  "token_uri": os.environ.get("token_uri_F"),
+  "auth_provider_x509_cert_url": os.environ.get("auth_provider_x509_cert_url_F"),
+  "client_x509_cert_url": os.environ.get("client_x509_cert_url_F"),
+  "universe_domain": os.environ.get("universe_domain_F")
+  }
+
+
+
   app = flask.Flask(__name__)
   app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite'
   login_manager = LoginManager()
