@@ -17,6 +17,10 @@ import google_auth_oauthlib.flow
 from google.oauth2 import service_account
 import googleapiclient.discovery
 import os
+import dotenv
+
+
+dotenv.load_dotenv()
 
 
 def create_app(test_config=None):
@@ -35,14 +39,14 @@ def create_app(test_config=None):
 
   # This variable specifies the name of a file that contains the OAuth 2.0
   # information for this application, including its client_id and client_secret.
-  CLIENT_SECRETS_FILE = 'client_secret_319728086235-ubuom2fs3laa07rgohgqr9m4mqe00sbc.apps.googleusercontent.com.json'
-
+  #CLIENT_SECRETS_FILE = 'client_secret_2_319728086235-ubuom2fs3laa07rgohgqr9m4mqe00sbc.apps.googleusercontent.com.json'
+  CLIENT_SECRETS_FILE = os.environ.get('CLIENT_SECRETS_FILE')
   # This OAuth 2.0 access scope allows for full read/write access to the
   # authenticated user's account and requires requests to use an SSL connection.
   SCOPES = ["openid", "https://www.googleapis.com/auth/userinfo.profile",  "https://www.googleapis.com/auth/userinfo.email"]
 
-
-
+  #FUTURE_PRODUCER = 'future-producer-418904-ed3008c258c5.json'
+  FUTURE_PRODUCER = os.environ.get('FUTURE_PRODUCER')
     
   app = flask.Flask(__name__)
   app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite'
@@ -73,6 +77,7 @@ def create_app(test_config=None):
 
   @app.route('/')
   def index():
+    print("hello",FUTURE_PRODUCER)
     return render_template("login.html")
     return print_index_table()
 
@@ -92,7 +97,7 @@ def create_app(test_config=None):
     
     if request.method == "POST":
           credentials = service_account.Credentials.from_service_account_file(
-            'future-producer-418904-ed3008c258c5.json')
+            FUTURE_PRODUCER)
 
           print(credentials)
           vertexai.init(credentials=credentials)
@@ -126,6 +131,7 @@ def create_app(test_config=None):
   def authorize():
     flask.session.clear()
     # Create flow instance to manage the OAuth 2.0 Authorization Grant Flow steps.
+    print(CLIENT_SECRETS_FILE)
     flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
         CLIENT_SECRETS_FILE, scopes=SCOPES)
 
