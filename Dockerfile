@@ -3,6 +3,7 @@
 FROM python:3.11.9-slim
 
 WORKDIR /app
+ENV PATH="/app/.local/bin:${PATH}"
 ENV FLASK_APP=main.py
 ENV FLASK_RUN_HOST=0.0.0.0
 ARG CLIENT_SECRETS_FILE
