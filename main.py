@@ -75,6 +75,7 @@ def create_app(test_config=None):
 
 
   app = flask.Flask(__name__)
+  Talisman(app)
   app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite'
   login_manager = LoginManager()
   login_manager.init_app(app)
@@ -288,6 +289,6 @@ def create_app(test_config=None):
     # for your API project in the Google API Console.
     #app.run(host = '0.0.0.0',debug=True)
 
-  return Talisman(app)
+  return app
    
 yourapp = create_app()
