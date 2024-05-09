@@ -188,7 +188,7 @@ def create_app(test_config=None):
 
     flow = google_auth_oauthlib.flow.Flow.from_client_config(
         CLIENT_SECRETS_FILE, scopes=SCOPES, state=state)
-    flow.redirect_uri = flask.url_for('oauth2callback', _external=True)
+    flow.redirect_uri = CLIENT_SECRETS_FILE["web"]["redirect_uris"]
 
     # Use the authorization server's response to fetch the OAuth 2.0 tokens.
     authorization_response = flask.request.url.replace("http://","https://")
