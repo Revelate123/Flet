@@ -44,6 +44,7 @@ def create_app(test_config=None):
 
   CLIENT_SECRETS_FILE = {"web":{"client_id":os.environ.get("client_id_C"),
                                 "project_id":os.environ.get("project_id_C"),
+                                "auth_uri":os.environ.get("auth_uri_C"),
                                 "token_uri":os.environ.get("token_uri_C"),
                                 "auth_provider_x509_cert_url":os.environ.get("auth_provider_x509_cert_url_C"),
                                 "client_secret":os.environ.get("client_secret_C"),
