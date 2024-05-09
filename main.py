@@ -18,7 +18,6 @@ from google.oauth2 import service_account
 import googleapiclient.discovery
 import os
 import dotenv
-from flask_talisman import Talisman
 
 
 dotenv.load_dotenv()
@@ -75,7 +74,7 @@ def create_app(test_config=None):
 
 
   app = flask.Flask(__name__)
-  Talisman(app)
+  
   app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite'
   login_manager = LoginManager()
   login_manager.init_app(app)
@@ -192,7 +191,8 @@ def create_app(test_config=None):
     flow.redirect_uri = flask.url_for('oauth2callback', _external=True)
 
     # Use the authorization server's response to fetch the OAuth 2.0 tokens.
-    authorization_response = flask.request.url
+    authorization_response = flask.request.url.replace("http://","https://")
+    print(authorization_response)
     flow.fetch_token(authorization_response=authorization_response)
 
     # Store credentials in the session.
@@ -288,7 +288,6 @@ def create_app(test_config=None):
     # Specify a hostname and port that are set as a valid redirect URI
     # for your API project in the Google API Console.
     #app.run(host = '0.0.0.0',debug=True)
-
   return app
    
 yourapp = create_app()
