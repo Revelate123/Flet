@@ -120,7 +120,7 @@ def create_app(test_config=None):
     # Load credentials from the session.
     
     if request.method == "POST":
-          credentials = service_account.Credentials.from_service_account_file(
+          credentials = service_account.Credentials.from_service_account_info(
             FUTURE_PRODUCER)
 
           print(credentials)
@@ -156,7 +156,7 @@ def create_app(test_config=None):
     flask.session.clear()
     # Create flow instance to manage the OAuth 2.0 Authorization Grant Flow steps.
     print(CLIENT_SECRETS_FILE)
-    flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
+    flow = google_auth_oauthlib.flow.Flow.from_client_config(
         CLIENT_SECRETS_FILE, scopes=SCOPES)
 
     # The URI created here must exactly match one of the authorized redirect URIs
@@ -184,7 +184,7 @@ def create_app(test_config=None):
     # verified in the authorization server response.
     state = flask.session['state']
 
-    flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
+    flow = google_auth_oauthlib.flow.Flow.from_client_config(
         CLIENT_SECRETS_FILE, scopes=SCOPES, state=state)
     flow.redirect_uri = flask.url_for('oauth2callback', _external=True)
 
