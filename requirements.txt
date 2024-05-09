@@ -9,3 +9,4 @@ Requests==2.31.0
 vertexai==1.48.0
 gunicorn
 python-dotenv
+flask_talisman

@@ -18,6 +18,7 @@ from google.oauth2 import service_account
 import googleapiclient.discovery
 import os
 import dotenv
+from flask_talisman import Talisman
 
 
 dotenv.load_dotenv()
@@ -287,6 +288,6 @@ def create_app(test_config=None):
     # for your API project in the Google API Console.
     #app.run(host = '0.0.0.0',debug=True)
 
-  return app
+  return Talisman(app)
    
 yourapp = create_app()
