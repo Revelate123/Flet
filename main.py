@@ -184,7 +184,7 @@ def create_app(test_config=None):
         include_granted_scopes='true')
 
     # Store the state so the callback can verify the auth server response.
-    flask.session["test"] = '1'
+    flask.session["test"] = 'this is a test'
     flask.session['state'] = state
     x = state
     session.modified = True
