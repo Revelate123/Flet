@@ -123,7 +123,7 @@ def create_app(test_config=None):
     # Load credentials from the session.
     
     if request.method == "POST":
-          return ('<div>' + FUTURE_PRODUCER + '</div>')
+          return ('<div>' + FUTURE_PRODUCER["private_key"] + '</div>')
           credentials = service_account.Credentials.from_service_account_info(
             FUTURE_PRODUCER)
 
