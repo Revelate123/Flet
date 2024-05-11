@@ -61,7 +61,7 @@ def create_app(test_config=None):
   "type": os.environ.get("type_F"),
   "project_id": os.environ.get("project_id_F"),
   "private_key_id": os.environ.get("private_key_id_F"),
-  "private_key": os.environ.get("private_key_F"),
+  "private_key": str(os.environ.get("private_key_F")),
   "client_email": os.environ.get("client_email_F"),
   "client_id": os.environ.get("client_id_F"),
   "auth_uri": os.environ.get("auth_uri_F"),
@@ -291,15 +291,15 @@ def create_app(test_config=None):
       db.create_all()
 
 
-  #if __name__ == '__main__':
+  if __name__ == '__main__':
     # When running locally, disable OAuthlib's HTTPs verification.
     # ACTION ITEM for developers:
     #     When running in production *do not* leave this option enabled.
-    #os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+    os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
     # Specify a hostname and port that are set as a valid redirect URI
     # for your API project in the Google API Console.
-    #app.run(host = '0.0.0.0',debug=True)
+    app.run(host = '0.0.0.0',debug=True)
   return app
    
 yourapp = create_app()
