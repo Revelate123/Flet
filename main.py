@@ -186,7 +186,7 @@ def create_app(test_config=None):
     # Store the state so the callback can verify the auth server response.
     flask.session["test"] = 'this is a test'
     flask.session['state'] = state
-    x = state
+    x = "hello world"
     session.modified = True
 
     return flask.redirect(authorization_url)
