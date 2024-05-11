@@ -87,7 +87,7 @@ def create_app(test_config=None):
 
   db = SQLAlchemy(app)
   login = LoginManager(app)
-  login.login_view = 'index'
+  login.login_view = 'login'
 
   class User(UserMixin, db.Model):
       __tablename__ = 'users'
@@ -102,14 +102,15 @@ def create_app(test_config=None):
 
 
   @app.route('/')
+  @login_required
   def index():
-    print("hello",FUTURE_PRODUCER)
-    return render_template("login.html")
-    return print_index_table()
+    return flask.redirect(flask.url_for('restaurant'))
+    #return print_index_table()
 
 
 
   @app.route('/cv')
+  @login_required
   def cv():
     
           return send_file('static\Thomas Duffett CV (1).pdf', mimetype='.pdf')
@@ -151,6 +152,14 @@ def create_app(test_config=None):
     else:
       return render_template("restaurant.html")
     return (model_response + print_index_table())
+
+
+
+  @app.route('/login')
+  def login():
+    #if user has already authenticated then should just auto log them in.
+    return render_template("login.html")
+
 
 
   @app.route('/authorize')
@@ -279,15 +288,15 @@ def create_app(test_config=None):
       db.create_all()
 
 
-  if __name__ == '__main__':
+  #if __name__ == '__main__':
     # When running locally, disable OAuthlib's HTTPs verification.
     # ACTION ITEM for developers:
     #     When running in production *do not* leave this option enabled.
-    os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+    #os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
     # Specify a hostname and port that are set as a valid redirect URI
     # for your API project in the Google API Console.
-    app.run(host = '0.0.0.0',debug=True)
+    #app.run(host = '0.0.0.0',debug=True)
   return app
    
 yourapp = create_app()
