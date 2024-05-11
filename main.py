@@ -161,7 +161,7 @@ def create_app(test_config=None):
     return render_template("login.html")
 
 
-
+  x = ''
   @app.route('/authorize')
   def authorize():
     flask.session.clear()
@@ -186,7 +186,7 @@ def create_app(test_config=None):
     # Store the state so the callback can verify the auth server response.
     
     flask.session['state'] = state
-    return ('<div><li>' + flask.session['state'] +'</li><li>'+ state +  '</li></div>')
+    x = state
     session.modified = True
 
     return flask.redirect(authorization_url)
@@ -197,7 +197,7 @@ def create_app(test_config=None):
     # Specify the state when creating the flow in the callback so that it can
     # verified in the authorization server response.
     state = flask.session['state']
-
+    return ('<div><li>' + flask.session['state'] +'</li><li>'+ state +  '</li></div>')
     flow = google_auth_oauthlib.flow.Flow.from_client_config(
         CLIENT_SECRETS_FILE, scopes=SCOPES, state=state)
     flow.redirect_uri = CLIENT_SECRETS_FILE["web"]["redirect_uris"]
