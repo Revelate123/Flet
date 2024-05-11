@@ -184,8 +184,9 @@ def create_app(test_config=None):
         include_granted_scopes='true')
 
     # Store the state so the callback can verify the auth server response.
-    return ('<div>' + state + '</div>')
+    
     flask.session['state'] = state
+    return ('<div><li>' + flask.session['state'] +'</li><li>'+ state +  '</li></div>')
     session.modified = True
 
     return flask.redirect(authorization_url)
