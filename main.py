@@ -131,8 +131,8 @@ def create_app(test_config=None):
           vertexai.init(project= "future-producer-418904", credentials=credentials)
           model = vertexai.generative_models.GenerativeModel("gemini-pro")
           chat_request = request.form.get("chat_request")
-          model_response = model.generate_content(chat_request)
-          print("model_response\n",model_response)
+          #model_response = model.generate_content(chat_request)
+          #print("model_response\n",model_response)
           model_response = model.generate_content("Extract and return as text, only one location from the following sentence. Do not return any other text and do not provide a full stop.:" + chat_request).text
           #If they did not provide a location then I need a way to know
           print(model_response)
