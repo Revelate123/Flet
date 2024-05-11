@@ -128,7 +128,7 @@ def create_app(test_config=None):
             FUTURE_PRODUCER)
 
           print(credentials)
-          vertexai.init(credentials=credentials)
+          vertexai.init(project= "future-producer-418904", credentials=credentials)
           model = vertexai.generative_models.GenerativeModel("gemini-pro")
           chat_request = request.form.get("chat_request")
           model_response = model.generate_content(chat_request)
