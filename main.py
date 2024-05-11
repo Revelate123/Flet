@@ -61,7 +61,7 @@ def create_app(test_config=None):
   "type": os.environ.get("type_F"),
   "project_id": os.environ.get("project_id_F"),
   "private_key_id": os.environ.get("private_key_id_F"),
-  "private_key": os.environ.get("private_key_F").replace('\\n','\n'),
+  "private_key": "-----BEGIN PRIVATE KEY-----\n"+os.environ.get("private_key_F")+"\n-----END PRIVATE KEY-----\n",
   "client_email": os.environ.get("client_email_F"),
   "client_id": os.environ.get("client_id_F"),
   "auth_uri": os.environ.get("auth_uri_F"),
