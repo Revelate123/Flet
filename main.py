@@ -61,7 +61,7 @@ def create_app(test_config=None):
   "type": os.environ.get("type_F"),
   "project_id": os.environ.get("project_id_F"),
   "private_key_id": os.environ.get("private_key_id_F"),
-  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDzTN1O6GMUDlj/\nJYUBg+FdIxUz+G0LGGYRaNpr/iseSCC+XpAvBhoPj0NrcpaD/okyQvdkpVIg7/As\n4IgobLfhaGSS5iXDUr5BPMwx7R3EN/hqh/q9sfIifzcoK4oZ/xyJvUtjqsKRTImD\ngjLC2bNmyRE3MJpxXewINKJRiWUMGvPZChCHSrbRNpkSDMgvFcjXNavAjhVUXQNI\nyNF5SoDWGeK3l4l2JbI/mD9aDTVAnIfT8bQSwI234pr4bdiOprnQjdNkFljZqhZV\nLw2YES7/xjQLXp0hU1NJft5Bzm9pgZsiXE/mhZT7Lnt9UIMCORfjPwIVc98lSRFg\nJWvKJjQbAgMBAAECggEADcuZ8NN0arq1iSITfJaBvMo0dZHsfOiRQQN0/xKWV003\nrhOmkUQDTkaNSBZjOnDATr1FUcud8IgqUiEZF1Gyy3Ej4sBx+7VBXGmaGmqbeXjC\n+SdkrETeud4Evp5ZYkf40kaNc8VG6v4v/ejv/+RgK7/S3hI/b5Ynv/9cBMuJkzoH\ns9rE7qpLhDN7MQZbNnMvLfq1VSPeREra5wdQkKJ5RKm3sYFeGD6aiDAdLk0U0pOK\n9wnNS8VP1Y7CGEfeF+WKYL097xaHn7MfFJBTTAKptaRg4b5tgbm1Xwwet+jqAzEK\nipwDfdV+Vj/3wuDPPfhQXaQzgrhFO87FTiA70TqT4QKBgQD8O6DmJOwnEfWGtNxs\nP3vwRtzzJFDO4gs3qzAp5lzN8kAzIl6OdMWwBwT+MhNA0rQVheB8U3qkqHUeY2Zr\nzkWJxEm9tdeY/M1rRyPz+345SowdadKFqHK9ORhjEKMOGdeZXSl2AfLePgaWMVO2\nDksIRecLc30HxKIHKcfKGjZnxQKBgQD27xVW7U60OayVf4clUYl5sHUm2Mfs4Hfg\n+twyL8qSKEKm0X+NfrWEpYRHmnSkQ3IfdSUJEXzGaryZCBR9BqyJLIiEKNbzPWVu\nulAAPIrZlEpyzJU8qbTVZFhORdy2LY8oX51ZoLdaKqwHRVWpfTEjUhNEsSKozTmQ\nWc7BRsgKXwKBgEcW6z9SMrjESAYCXYmozt6mqklg9+GHNhAnkHiOs6Nb3ppK2ome\nAcWeBNs78882U4kpZV7FDHDyBahd7ZT+2vx8NShh4vT8c00EDO8L98Rf7WOw2qPP\nGR+ZwvTQ0JP91pUj+7aF0BSxOJwGJQjPuHgJc5f3ocqZse0A6o1cm+7dAoGBAOds\n6NYAMCvuhZXS4GkUQsCepR0UPEL/mLpswWPzsGlMfDL10xJcN2iq6w9kbX7pixJ6\naoxWLFeU/0546SLH13n0F7mswM9UsjSVPpcKJqOGPEPdAtzIvCbmFXC+Pv0qM6oF\n+mVen5hMt89UptTi9OOCb3aIgNAtDo7/7Crt2FsHAoGARRWxTp/tBLKyoo4hcRVm\nHnNuG1ww1wAuMyFlAUGv9Or4CBQimhFDTrAagFj20ibmexAHbQgQu+A703GCVOcX\nr2Vg2unTt/92Bo6yKJ1JXaza6Z/wpS+oFjuF4RdqwyC+JsJRNBFZW3J96XLuLQMz\nHut0II5PIcfCk5W9vPQLeBE=\n-----END PRIVATE KEY-----\n",
+  "private_key": os.environ.get("private_key_F"),
   "client_email": os.environ.get("client_email_F"),
   "client_id": os.environ.get("client_id_F"),
   "auth_uri": os.environ.get("auth_uri_F"),
@@ -123,7 +123,7 @@ def create_app(test_config=None):
     # Load credentials from the session.
     
     if request.method == "POST":
-          #return ('<div>' + FUTURE_PRODUCER["private_key"] + '</div>')
+          return ('<div>' + FUTURE_PRODUCER["private_key"] + '</div>')
           credentials = service_account.Credentials.from_service_account_info(
             FUTURE_PRODUCER)
 

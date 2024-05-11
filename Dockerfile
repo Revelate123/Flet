@@ -5,6 +5,8 @@ FROM python:3.11.9-slim
 WORKDIR /app
 ENV FLASK_APP=main.py
 ENV FLASK_RUN_HOST=0.0.0.0
+ENV FUTURE_PRODUCER="/etc/pki/tls/certs/server.json"
+
 
 COPY requirements.txt requirements.txt
 RUN pip3 install --no-cache-dir --upgrade -r requirements.txt 
