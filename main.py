@@ -184,7 +184,7 @@ def create_app(test_config=None):
         include_granted_scopes='true')
 
     # Store the state so the callback can verify the auth server response.
-    
+    flask.session["test"] = 1
     flask.session['state'] = state
     x = state
     session.modified = True
@@ -197,7 +197,7 @@ def create_app(test_config=None):
     # Specify the state when creating the flow in the callback so that it can
     # verified in the authorization server response.
     state = flask.session['state']
-    return ('<div><li>' + flask.session['state'] +'</li><li>'+ state +  '</li></div>')
+    return ('<div><li>' + flask.session['test'] +'</li><li>'+ x +  '</li></div>')
     flow = google_auth_oauthlib.flow.Flow.from_client_config(
         CLIENT_SECRETS_FILE, scopes=SCOPES, state=state)
     flow.redirect_uri = CLIENT_SECRETS_FILE["web"]["redirect_uris"]
