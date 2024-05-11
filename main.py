@@ -61,7 +61,7 @@ def create_app(test_config=None):
   "type": os.environ.get("type_F"),
   "project_id": os.environ.get("project_id_F"),
   "private_key_id": os.environ.get("private_key_id_F"),
-  "private_key": os.environ.get("private_key_F"),
+  "private_key": "-----BEGIN PRIVATE KEY-----\n" + os.environ.get("private_key_F").replace("\\n","\n")+"\n-----END PRIVATE KEY-----\n",
   "client_email": os.environ.get("client_email_F"),
   "client_id": os.environ.get("client_id_F"),
   "auth_uri": os.environ.get("auth_uri_F"),
@@ -113,7 +113,7 @@ def create_app(test_config=None):
   @login_required
   def cv():
     
-          return send_file('static\Thomas Duffett CV (1).pdf', mimetype='.pdf')
+          return send_file('static/Thomas Duffett CV (1).pdf', mimetype='.pdf')
 
 
 
@@ -123,7 +123,7 @@ def create_app(test_config=None):
     # Load credentials from the session.
     
     if request.method == "POST":
-          return ('<div>' + FUTURE_PRODUCER["private_key"] + '</div>')
+          #return ('<div>' + FUTURE_PRODUCER["private_key"] + '</div>')
           credentials = service_account.Credentials.from_service_account_info(
             FUTURE_PRODUCER)
 
