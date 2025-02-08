@@ -10,3 +10,5 @@ client_secret_319728086235-ubuom2fs3laa07rgohgqr9m4mqe00sbc.apps.googleuserconte
 !.elasticbeanstalk/*.global.yml
 client_secret_2_319728086235-ubuom2fs3laa07rgohgqr9m4mqe00sbc.apps.googleusercontent.com.json
 .env
+node_modules/*
+node_modules
